@@ -2,70 +2,75 @@
 const { useState, useEffect } = React;
 
 // Mock-Daten für Pflanzen (als Fallback, falls APIs fehlschlagen)
+// Diese Daten dienen als Ausgangspunkt, falls die API nicht erreichbar ist
 const initialPlants = [
   { id: 1, name: "Monstera", species: "Monstera Deliciosa", lastWatered: "2025-04-20", wateringInterval: 7, repottingInterval: 365 },
   { id: 2, name: "Ficus", species: "Ficus Lyrata", lastWatered: "2025-04-22", wateringInterval: 5, repottingInterval: 180 },
 ];
 
 // API-Schlüssel (UNSIICHER: Nur für Studienzwecke direkt eingebunden)
-const PLANT_ID_API_KEY = "avlFysladevX0qUnsIM9nkHsyVQOUH2ZuwY9rbJlco9f1qbkzK"; // Plant.id
-const WEATHER_API_KEY = "3bde2f18e956eb6065fb6c19f326ff73"; // OpenWeatherMap
-const CALENDAR_API_KEY = "AIzaSyBapxYGGpoXoPGsbWECIkGmLuRgRHUIlP0"; // Google Calendar
+// Diese Schlüssel sollten in einer sicheren Umgebung (z. B. .env-Datei) gespeichert werden
+const PLANT_ID_API_KEY = "avlFysladevX0qUnsIM9nkHsyVQOUH2ZuwY9rbJlco9f1qbkzK"; // Plant.id API-Schlüssel
+const WEATHER_API_KEY = "3bde2f18e956eb6065fb6c19f326ff73"; // OpenWeatherMap API-Schlüssel
+const CALENDAR_API_KEY = "AIzaSyBapxYGGpoXoPGsbWECIkGmLuRgRHUIlP0"; // Google Calendar API-Schlüssel
 
 // Debugging: Überprüfe, ob React geladen ist
+// Diese Logs helfen bei der Fehlersuche, falls die Bibliotheken nicht korrekt geladen werden
 console.log("React geladen:", typeof React !== "undefined");
 console.log("ReactDOM geladen:", typeof ReactDOM !== "undefined");
 
 // Hauptkomponente
 const PlantTracker = () => {
   // Zustände für Pflanzen, neue Pflanze, Wetter, Benachrichtigungen und Fehler
-  const [plants, setPlants] = useState(initialPlants);
-  const [newPlant, setNewPlant] = useState({ name: "", image: null });
-  const [weather, setWeather] = useState(null);
-  
-  // Benachrichtigungen aus localStorage laden, falls vorhanden
+  // useState verwaltet die Daten im React-Komponentenbaum
+  const [plants, setPlants] = useState(initialPlants); // Liste der aktuellen Pflanzen
+  const [newPlant, setNewPlant] = useState({ name: "", image: null }); // Daten für eine neue Pflanze
+  const [weather, setWeather] = useState(null); // Aktuelle Wetterinformationen
   const [notifications, setNotifications] = useState(() => {
+    // Lädt Benachrichtigungen aus localStorage beim Initialisieren
     const savedNotifications = localStorage.getItem("notifications");
     return savedNotifications ? JSON.parse(savedNotifications) : [];
-  });
-  const [error, setError] = useState(null);
+  }); // Liste der Benachrichtigungen
+  const [error, setError] = useState(null); // Speichert Fehlermeldungen für die UI
 
   // Benachrichtigungen im localStorage speichern, wenn sie sich ändern
+  // useEffect sorgt für persistente Speicherung der Benachrichtigungen
   useEffect(() => {
     localStorage.setItem("notifications", JSON.stringify(notifications));
     console.log("Benachrichtigungen im localStorage gespeichert:", notifications);
-  }, [notifications]);
+  }, [notifications]); // Abhängigkeit: notifications
 
   // Funktion zum Hinzufügen einer neuen Pflanze
+  // Verhindert Hinzufügung, wenn Name oder Bild fehlen
   const addPlant = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Verhindert das Standard-Formularverhalten (Seitenrefresh)
     if (!newPlant.name || !newPlant.image) {
-      setError("Bitte gib einen Namen und ein Bild ein.");
+      setError("Bitte gib einen Namen und ein Bild ein."); // Setzt Fehlermeldung
       console.warn("Fehlende Eingaben: Name oder Bild", { name: newPlant.name, image: newPlant.image });
-      return;
+      return; // Abbruch bei unvollständigen Daten
     }
 
     try {
       console.log("Starte Plant.id API-Aufruf mit Bild:", newPlant.image.name);
-      const identifiedPlant = await identifyPlant(newPlant.image);
+      const identifiedPlant = await identifyPlant(newPlant.image); // Ruft Pflanzenidentifikation auf
       const plantData = {
-        id: plants.length + 1,
+        id: plants.length + 1, // Erzeugt eine neue eindeutige ID
         name: newPlant.name,
-        species: identifiedPlant?.species || "Unbekannt (API fehlgeschlagen)",
-        lastWatered: new Date().toISOString().split("T")[0],
-        wateringInterval: identifiedPlant?.wateringInterval || 7,
-        repottingInterval: identifiedPlant?.repottingInterval || 365,
+        species: identifiedPlant?.species || "Unbekannt (API fehlgeschlagen)", // Fallback bei fehlender Spezies
+        lastWatered: new Date().toISOString().split("T")[0], // Aktuelles Datum
+        wateringInterval: identifiedPlant?.wateringInterval || 7, // Standardwert für Gießintervall
+        repottingInterval: identifiedPlant?.repottingInterval || 365, // Standardwert für Umtopfintervall
       };
 
-      setPlants([...plants, plantData]);
-      setNewPlant({ name: "", image: null });
-      setError(null);
+      setPlants([...plants, plantData]); // Fügt die neue Pflanze zur Liste hinzu
+      setNewPlant({ name: "", image: null }); // Zurücksetzen des Eingabefelds
+      setError(null); // Zurücksetzen der Fehlermeldung
       console.log("Pflanze hinzugefügt:", plantData);
 
       // Kalender-API: Erinnerung erstellen
-      await scheduleNotification(plantData);
+      await scheduleNotification(plantData); // Planung der Benachrichtigung
     } catch (err) {
-      setError(`Fehler beim Hinzufügen der Pflanze: ${err.message}`);
+      setError(`Fehler beim Hinzufügen der Pflanze: ${err.message}`); // Setzt Fehlermeldung
       console.error("Fehler beim Pflanzen hinzufügen:", err);
       // Fallback nur für andere Fehler als "Übereinstimmung unter 10%"
       if (!err.message.includes("Erkennung zu unsicher: Übereinstimmung unter 10%")) {
@@ -77,7 +82,7 @@ const PlantTracker = () => {
           wateringInterval: 7,
           repottingInterval: 365,
         };
-        setPlants([...plants, fallbackPlant]);
+        setPlants([...plants, fallbackPlant]); // Fügt Fallback-Pflanze hinzu
         setNewPlant({ name: "", image: null });
         console.log("Fallback-Pflanze hinzugefügt:", fallbackPlant);
       }
@@ -85,6 +90,7 @@ const PlantTracker = () => {
   };
 
   // Pflanzenidentifikation mit Plant.id API
+  // Verarbeitet das Hochgeladene Bild und gibt Pflanzendaten zurück
   const identifyPlant = async (image) => {
     try {
       // Validierung des Bildes
@@ -93,14 +99,14 @@ const PlantTracker = () => {
       }
 
       const formData = new FormData();
-      formData.append("images", image); // Bild anhängen
-      formData.append("api_key", PLANT_ID_API_KEY); // API-Schlüssel
-      formData.append("plant_details[]", ["common_names", "care"]); // Array als plant_details übergeben
+      formData.append("images", image); // Hängt das Bild an die Formulardaten an
+      formData.append("api_key", PLANT_ID_API_KEY); // Fügt den API-Schlüssel hinzu
+      formData.append("plant_details[]", ["common_names", "care"]); // Fordert spezifische Details an
 
       console.log("FormData vorbereitet:", {
         imageName: image.name,
         imageType: image.type,
-        apiKey: PLANT_ID_API_KEY.substring(0, 5) + "...",
+        apiKey: PLANT_ID_API_KEY.substring(0, 5) + "...", // Teilweise maskierter API-Schlüssel
         plantDetails: ["common_names", "care"],
       });
 
@@ -118,23 +124,24 @@ const PlantTracker = () => {
       console.log("Plant.id Antwort:", data);
 
       // Überprüfe die Übereinstimmung (probability)
-      const probability = data.suggestions[0]?.probability || 0;
+      const probability = data.suggestions[0]?.probability || 0; // Fallback auf 0, wenn keine Wahrscheinlichkeit vorhanden
       if (probability < 0.1) {
         throw new Error("Erkennung zu unsicher: Übereinstimmung unter 10%. Bitte lade ein klareres Bild hoch.");
       }
 
       return {
-        species: data.suggestions[0]?.plant_name || "Unbekannt",
+        species: data.suggestions[0]?.plant_name || "Unbekannt", // Erste Suggestion oder Fallback
         wateringInterval: data.suggestions[0]?.plant_details?.care?.watering?.interval_days || 7,
         repottingInterval: data.suggestions[0]?.plant_details?.care?.repotting?.interval_days || 365,
       };
     } catch (err) {
       console.error("Plant.id Fehler:", err);
-      throw err;
+      throw err; // Weiterleitung des Fehlers an die aufrufende Funktion
     }
   };
 
   // Wetterdaten mit OpenWeatherMap API abrufen
+  // Holt Wetterinformationen für einen Standardort (Berlin)
   const fetchWeather = async (location = "Berlin") => {
     try {
       console.log("Starte Wetter-API-Aufruf...");
@@ -145,21 +152,22 @@ const PlantTracker = () => {
         throw new Error(`Wetter-API Fehler: ${response.statusText}`);
       }
       const data = await response.json();
-      setWeather({ condition: data.weather[0].main, temp: data.main.temp });
+      setWeather({ condition: data.weather[0].main, temp: data.main.temp }); // Speichert Wetterdaten
       console.log("Wetterdaten geladen:", data);
     } catch (err) {
       console.error("Wetter-API Fehler:", err);
       setError("Fehler beim Abrufen der Wetterdaten: " + err.message);
-      setWeather({ condition: "Sonnig", temp: 20 });
+      setWeather({ condition: "Sonnig", temp: 20 }); // Fallback-Wetterdaten
       console.log("Wetterdaten Fallback verwendet");
     }
   };
 
   // Kalender-API für Benachrichtigungen (Mock, da OAuth2 erforderlich)
+  // Erstellt eine Mock-Benachrichtigung basierend auf dem Gießintervall
   const scheduleNotification = async (plant) => {
     try {
       const nextWatering = new Date(plant.lastWatered);
-      nextWatering.setDate(nextWatering.getDate() + plant.wateringInterval);
+      nextWatering.setDate(nextWatering.getDate() + plant.wateringInterval); // Berechnet das nächste Gießdatum
 
       const event = {
         summary: `Gieße ${plant.name}`,
@@ -177,19 +185,21 @@ const PlantTracker = () => {
   };
 
   // Funktion zum Löschen einer einzelnen Erinnerung und der zugehörigen Pflanze
+  // Entfernt sowohl die Benachrichtigung als auch die Pflanze basierend auf dem Namen
   const removeNotification = (index) => {
     const notification = notifications[index];
-    const plantName = notification.split(" ")[1]; // Extrahiere den Pflanzennamen (z. B. "Monstera" aus "Gieße Monstera am ...")
-    const newPlants = plants.filter((plant) => plant.name !== plantName);
-    const newNotifications = notifications.filter((_, i) => i !== index);
+    const plantName = notification.split(" ")[1]; // Extrahiert den Pflanzennamen aus der Benachrichtigung
+    const newPlants = plants.filter((plant) => plant.name !== plantName); // Filtert die Pflanze heraus
+    const newNotifications = notifications.filter((_, i) => i !== index); // Entfernt die Benachrichtigung
 
     setPlants(newPlants);
     setNotifications(newNotifications);
-    localStorage.setItem("notifications", JSON.stringify(newNotifications));
+    localStorage.setItem("notifications", JSON.stringify(newNotifications)); // Aktualisiert localStorage
     console.log("Einzelne Benachrichtigung und Pflanze gelöscht:", { plantName, index });
   };
 
   // Funktion zum Löschen aller Erinnerungen
+  // Entfernt alle Benachrichtigungen und löscht sie aus localStorage
   const clearNotifications = () => {
     setNotifications([]);
     localStorage.removeItem("notifications");
@@ -197,12 +207,14 @@ const PlantTracker = () => {
   };
 
   // Wetter beim Laden abrufen
+  // useEffect sorgt dafür, dass Wetterdaten beim Mounten der Komponente geladen werden
   useEffect(() => {
     console.log("Lade Wetterdaten beim Start...");
     fetchWeather();
-  }, []);
+  }, []); // Keine Abhängigkeiten, lädt nur einmal beim Start
 
   // Datei-Upload-Handler für normales Hochladen
+  // Verarbeitet das Hochladen eines Bildes über Dateiauswahl oder Kamera
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -210,9 +222,9 @@ const PlantTracker = () => {
         setError("Ungültiges Bildformat. Bitte lade ein JPG- oder PNG-Bild hoch.");
         setNewPlant({ ...newPlant, image: null });
         console.warn("Ungültiges Bildformat:", file.type);
-        return;
+        return; // Abbruch bei ungültigem Format
       }
-      setNewPlant({ ...newPlant, image: file });
+      setNewPlant({ ...newPlant, image: file }); // Setzt das hochgeladene Bild
       console.log("Bild ausgewählt (Upload):", file.name, file.type);
     } else {
       console.warn("Kein Bild ausgewählt (Upload)");
@@ -220,6 +232,7 @@ const PlantTracker = () => {
   };
 
   // Datei-Upload-Handler für Kamera
+  // Verarbeitet das Aufnehmen eines Bildes mit der Kamera
   const handleCameraUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -227,9 +240,9 @@ const PlantTracker = () => {
         setError("Ungültiges Bildformat. Bitte lade ein JPG- oder PNG-Bild hoch.");
         setNewPlant({ ...newPlant, image: null });
         console.warn("Ungültiges Bildformat (Kamera):", file.type);
-        return;
+        return; // Abbruch bei ungültigem Format
       }
-      setNewPlant({ ...newPlant, image: file });
+      setNewPlant({ ...newPlant, image: file }); // Setzt das aufgenommene Bild
       console.log("Bild ausgewählt (Kamera):", file.name, file.type);
     } else {
       console.warn("Kein Bild ausgewählt (Kamera). Stelle sicher, dass die Kamera unterstützt wird.");
@@ -238,11 +251,12 @@ const PlantTracker = () => {
   };
 
   // Datenverknüpfung: Gießintervall basierend auf Wetter anpassen
+  // Passt das Gießintervall an die Wetterbedingungen an
   const adjustWateringInterval = (interval, weather) => {
-    if (!weather) return interval;
-    if (weather.temp > 25) return interval - 1; // Kürzer bei Hitze
-    if (weather.condition === "Rain") return interval + 1; // Länger bei Regen
-    return interval;
+    if (!weather) return interval; // Keine Anpassung, wenn keine Wetterdaten vorhanden
+    if (weather.temp > 25) return interval - 1; // Reduziert Intervall bei Hitze
+    if (weather.condition === "Rain") return interval + 1; // Erhöht Intervall bei Regen
+    return interval; // Standardintervall, wenn keine besonderen Bedingungen
   };
 
   // Debugging: Überprüfe, ob die Komponente rendert
@@ -297,6 +311,30 @@ const PlantTracker = () => {
                   onChange={handleImageUpload}
                   className="w-full p-2 text-gray-600"
                 />
+              </div>
+              <div className="flex-1">
+                <label className="block text-gray-600 mb-2">Foto aufnehmen:</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleCameraUpload}
+                  className="hidden"
+                  id="cameraInput"
+                />
+                <button
+                  onClick={() => {
+                    const cameraInput = document.getElementById("cameraInput");
+                    cameraInput.click();
+                    if (!("mediaDevices" in navigator) || !navigator.mediaDevices.getUserMedia) {
+                      setError("Kamera wird nicht unterstützt. Teste dies auf einem mobilen Gerät oder über HTTPS.");
+                      console.warn("Kamera nicht unterstützt");
+                    }
+                  }}
+                  className="mt-2 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+                >
+                  Foto aufnehmen
+                </button>
               </div>
             </div>
             <button
@@ -357,6 +395,7 @@ const PlantTracker = () => {
 };
 
 // Rendern der App
+// Versucht, die React-Komponente im DOM zu rendern
 try {
   console.log("Versuche, React App zu rendern...");
   if (document.getElementById("root")) {
