@@ -1,13 +1,6 @@
 // Hauptkomponente der Pflanzenpflege-Tracker-Anwendung
 const { useState, useEffect } = React;
 
-// Mock-Daten für Pflanzen (als Fallback, falls APIs fehlschlagen)
-// Diese Daten dienen als Ausgangspunkt, falls die API nicht erreichbar ist
-const initialPlants = [
-  { id: 1, name: "Monstera", species: "Monstera Deliciosa", lastWatered: "2025-04-20", wateringInterval: 7, repottingInterval: 365 },
-  { id: 2, name: "Ficus", species: "Ficus Lyrata", lastWatered: "2025-04-22", wateringInterval: 5, repottingInterval: 180 },
-];
-
 // API-Schlüssel (UNSIICHER: Nur für Studienzwecke direkt eingebunden)
 // Diese Schlüssel sollten in einer sicheren Umgebung (z. B. .env-Datei) gespeichert werden
 const PLANT_ID_API_KEY = "avlFysladevX0qUnsIM9nkHsyVQOUH2ZuwY9rbJlco9f1qbkzK"; // Plant.id API-Schlüssel
@@ -23,7 +16,7 @@ console.log("ReactDOM geladen:", typeof ReactDOM !== "undefined");
 const PlantTracker = () => {
   // Zustände für Pflanzen, neue Pflanze, Wetter, Benachrichtigungen und Fehler
   // useState verwaltet die Daten im React-Komponentenbaum
-  const [plants, setPlants] = useState(initialPlants); // Liste der aktuellen Pflanzen
+  const [plants, setPlants] = useState([]); // Liste der aktuellen Pflanzen, initial leer
   const [newPlant, setNewPlant] = useState({ name: "", image: null }); // Daten für eine neue Pflanze
   const [weather, setWeather] = useState(null); // Aktuelle Wetterinformationen
   const [notifications, setNotifications] = useState(() => {
@@ -214,7 +207,7 @@ const PlantTracker = () => {
   }, []); // Keine Abhängigkeiten, lädt nur einmal beim Start
 
   // Datei-Upload-Handler für normales Hochladen
-  // Verarbeitet das Hochladen eines Bildes über Dateiauswahl oder Kamera
+  // Verarbeitet das Hochladen eines Bildes über Dateiauswahl
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -228,25 +221,6 @@ const PlantTracker = () => {
       console.log("Bild ausgewählt (Upload):", file.name, file.type);
     } else {
       console.warn("Kein Bild ausgewählt (Upload)");
-    }
-  };
-
-  // Datei-Upload-Handler für Kamera
-  // Verarbeitet das Aufnehmen eines Bildes mit der Kamera
-  const handleCameraUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (!file.type.match(/image\/(jpeg|png)/)) {
-        setError("Ungültiges Bildformat. Bitte lade ein JPG- oder PNG-Bild hoch.");
-        setNewPlant({ ...newPlant, image: null });
-        console.warn("Ungültiges Bildformat (Kamera):", file.type);
-        return; // Abbruch bei ungültigem Format
-      }
-      setNewPlant({ ...newPlant, image: file }); // Setzt das aufgenommene Bild
-      console.log("Bild ausgewählt (Kamera):", file.name, file.type);
-    } else {
-      console.warn("Kein Bild ausgewählt (Kamera). Stelle sicher, dass die Kamera unterstützt wird.");
-      setError("Die Kamera konnte nicht geöffnet werden. Teste dies auf einem mobilen Gerät oder über HTTPS.");
     }
   };
 
@@ -301,41 +275,15 @@ const PlantTracker = () => {
               placeholder="Pflanzenname"
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
-            <div className="flex space-x-4">
-              <div className="flex-1">
-                <label className="block text-gray-600 mb-2">Bild hochladen:</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleImageUpload}
-                  className="w-full p-2 text-gray-600"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-gray-600 mb-2">Foto aufnehmen:</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleCameraUpload}
-                  className="hidden"
-                  id="cameraInput"
-                />
-                <button
-                  onClick={() => {
-                    const cameraInput = document.getElementById("cameraInput");
-                    cameraInput.click();
-                    if (!("mediaDevices" in navigator) || !navigator.mediaDevices.getUserMedia) {
-                      setError("Kamera wird nicht unterstützt. Teste dies auf einem mobilen Gerät oder über HTTPS.");
-                      console.warn("Kamera nicht unterstützt");
-                    }
-                  }}
-                  className="mt-2 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
-                >
-                  Foto aufnehmen
-                </button>
-              </div>
+            <div>
+              <label className="block text-gray-600 mb-2">Bild hochladen:</label>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageUpload}
+                className="w-full p-2 text-gray-600"
+              />
             </div>
             <button
               onClick={addPlant}
