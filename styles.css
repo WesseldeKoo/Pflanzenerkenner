@@ -1,0 +1,42 @@
+/* Benutzerdefiniertes CSS für den Pflanzenpflege-Tracker */
+
+/* Stil für Pflanzenkarten */
+.plant-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.plant-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Stil für Wetteranzeige */
+.weather-card {
+  transition: background-color 0.3s ease;
+}
+
+.weather-card:hover {
+  background-color: #dbeafe;
+}
+
+/* Verbesserte Eingabefelder */
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+/* Responsives Design für kleinere Bildschirme */
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .plant-card,
+  .weather-card {
+    padding: 1rem;
+  }
+}

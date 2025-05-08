@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtueller Pflanzenpflege-Tracker</title>
+  <!-- Tailwind CSS über CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React und ReactDOM über CDN -->
+  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Babel für JSX-Unterstützung -->
+  <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+  <!-- Benutzerdefiniertes CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Container für die React-App mit Fallback -->
+  <div id="root">
+    <p className="text-red-600 text-center p-4">
+      Fehler: React-App lädt nicht. Bitte starte einen lokalen Server (z. B. mit 'npx serve') und überprüfe die Konsole (F12) auf Fehler. Stelle sicher, dass app.js und styles.css im selben Verzeichnis wie index.html liegen.
+    </p>
+  </div>
+  <!-- JavaScript-Datei mit der Anwendungslogik -->
+  <script type="text/babel" src="app.js"></script>
+</body>
+</html>
